@@ -18,7 +18,6 @@ int main(){
    char first_name[100];
    char last_name[100];
    int i;
-   
 
    sscanf(name, "%s %s %d", first_name, last_name, &i);
 
