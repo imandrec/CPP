@@ -1,4 +1,4 @@
-Software Information:
+READ ME
 
 Simplified version of Unix Shell 
 
