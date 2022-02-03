@@ -14,7 +14,6 @@ int main()
       
     // dup() will create the copy of file_desc as the copy_desc
     // then both can be used interchangeably.
-  
     int copy_desc = dup(file_desc);
           
     // write() will write the given string into the file
