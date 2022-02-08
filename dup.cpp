@@ -25,4 +25,5 @@ int main()
     write(file_desc,"This will also be output to the file named dup.txt\n", 51);
       
     return 0;
+
 }
