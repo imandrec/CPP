@@ -18,7 +18,6 @@ int main(int argc, char * argv[]){
       execl("helloWorld", argv[0], NULL);
 
       printf("This is after exec()\n");
-      
       exit(0);
    }
 
