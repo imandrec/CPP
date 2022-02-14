@@ -1,90 +1,39 @@
-#include <iostream>
-#include <cstdlib>
-#include <string>
-#include <cstdio>
-#include <unistd.h>
-#include <vector>
-#include <sys/types.h>
-#include <pwd.h>
-#include <sys/wait.h>
-#include <algorithm>
-#include <cstring>
-#include <signal.h>
-#include <array>
-#include <getopt.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <stdlib.h>
+int parse(string input) {
 
+    input += " ";
+    vector<string> clean;
+    //looks for words surrounded by spaces and pushes them into clean vector
+    for (unsigned int i = 0; i < input.length(); i++) {
+        if (input.at(i) != ' ') {
+            unsigned int j = i + 1;
+            unsigned int length = 1;
+            if (input.at(i) == '"') {//looking at double quotes
+                while (j < input.length()) {
+                    if (input.at(j) == '"' && input.at(j - 1) != '\\') {
+                        --length;
+                        break;
+                    }
+                    else if (input.at(j) == '"' && input.at(j - 1) == '\\') {
+                        input.erase(j - 1, 1);
+                    }
+                    else {
+                        ++j;
+                        ++length;
+                    }
+                }//while
+                ++i;
+            }//if
+            else {
+                while (input.at(j) != ' ' && j < input.length()) {
+                    ++j;
+                    ++length;
+                }
+            }//else
+            clean.push_back(input.substr(i, length));
+            i = j;
+        }//if
 
-int main(int argc, char* argv[], const char* envp[]) {
-    //populate vector exports
+    }//for
 
-
-    //  pid = getpid();
-
-    signal(SIGINT, my_handler);//ignore C-c
-    signal(SIGQUIT, my_handler);//ignore C-backslash
-    signal(SIGTSTP, my_handler);//ignore C-z
-    signal(SIGTTIN, my_handler);//ignore
-    signal(SIGTTOU, my_handler);//ignore
-    signal(SIGCHLD, my_handler);//ignore
-
-
-    setvbuf(stdout, nullptr, _IONBF, 0);
-    setvbuf(stderr, nullptr, _IONBF, 0);
-
-
-
-    printf("\nType exit to quit\n\n");
-
-    bool exit = 0;//maybe when logout, not really for this program
-
-    while (!exit) {// will have condition while array is not logout
-        string input;
-        const int BUFF_SIZE = 1024; // size of data buffer
-        char buffer[BUFF_SIZE];    // data buffer
-        int n = 0;                  // number of bytes read
-
-
-        printf("1730sh:%s/$ ", getcurrentdir().c_str());
-        //preoblem may lay in buffer
-        if ((n = read(STDIN_FILENO, buffer, BUFF_SIZE)) > 0) {
-            //      input = (string)buffer;//the real problem lies here
-            input.assign(buffer, n - 1);//n - 1 bc \n key
-        }
-
-        if (parse(input) == -1) {
-            fprintf(stderr, "%s\n", "-1730sh: Oops, an error has occurred.");
-        }
-    } // while
-
-
-
-    return EXIT_SUCCESS;
-}
-
-
-
-string getcurrentdir() {
-    char cwd[1024];
-    string cfixed;
-    string home;
-
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        cfixed = (string)cwd;
-    }
-    else {
-        perror("getcwd() error");
-        return "?";
-    }
-
-    struct passwd* pw = getpwuid(getuid());
-    home = (string)pw->pw_dir;
-
-    if (home.compare(cfixed.substr(0, home.length())) == 0) {
-        cfixed.replace(0, home.length(), "~");
-    }
-
-    return cfixed;
-}
+    return eval(clean);
+}//parse
