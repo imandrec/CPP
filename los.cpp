@@ -1,3 +1,22 @@
+#include <iostream>
+#include <cstdlib>
+#include <string>
+#include <cstdio>
+#include <unistd.h>
+#include <vector>
+#include <sys/types.h>
+#include <pwd.h>
+#include <sys/wait.h>
+#include <algorithm>
+#include <cstring>
+#include <signal.h>
+#include <array>
+#include <getopt.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+
+
 int main(int argc, char* argv[], const char* envp[]) {
     //populate vector exports
 
@@ -44,9 +63,6 @@ int main(int argc, char* argv[], const char* envp[]) {
 
     return EXIT_SUCCESS;
 }
-
-
-
 
 
 
