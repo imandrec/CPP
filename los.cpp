@@ -1,32 +1,14 @@
-int eval(vector<string> clean) {
-    /*
-    for(string arg : copy)
-      printf("%s\n", arg.c_str());
-    */
+int exit(vector<string> args) {
 
-    if (clean.size() == 0) {
-        return 0;
+
+    //should be also if no argument, then supply with last process value
+    if (args.size() > 1)
+        exit(stoi(args.at(1)));
+    else if (args.size() == 1) {
+        exit(laststatus);
     }
+    else
+        exit(0);
 
-    string stdin = "STDIN_FILENO";
-    string stdout = "STDOUT_FILENO";
-    string stderr = "STDERR_FILENO";
-
-    for (unsigned int i = 0; i < clean.size() - 1; i++) {
-        //printf("%s\n", clean.at(i).c_str());
-        if (clean.at(i).compare("<") == 0) {
-            stdin = clean.at(i + 1);
-        }
-        if (clean.at(i).compare(">") == 0) {
-            stdout = clean.at(i + 1) + " (truncate)";
-        }
-        if (clean.at(i).compare(">>") == 0) {
-            stdout = clean.at(i + 1) + " (append)";
-        }
-        if (clean.at(i).compare("e>") == 0) {
-            stderr = clean.at(i + 1) + " (truncate)";
-        }
-        if (clean.at(i).compare("e>>") == 0) {
-            stderr = clean.at(i + 1) + " (append)";
-        }
-    }//for jobs
+    return -1;
+}
