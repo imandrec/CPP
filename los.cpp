@@ -1,42 +1,37 @@
 #include <stdio.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+#define MAX_SIZE 126
 
 //Print the type of file for command-line argument
 int main(int argc, char *argv[]){
+   char buff[100];
 
-    int i;
-    struct stat buf;
-
-    char *ptr;
-
-    for(i = 1; i < argc; i++){
-      printf("%s: ", argv[i]);
-      if(lstat(argv[i], &buf) < 0){
-        perror("lstat error");
-        continue;
-      }
-
-
-      if(S_ISREG(buf.st_mode)) ptr = "regular";
-
-      else if(S_ISDIR(buf.st_mode)) ptr = "directory";
-     
-      else if(S_ISCHR(buf.st_mode)) ptr = "charcter special";
-
-      else if(S_ISBLK(buf.st_mode)) ptr = "block sppecial";
-    
-      else if(S_ISFIFO(buf.st_mode)) ptr = "fifo";
-
-      else if(S_ISLNK(buf.st_mode)) ptr = "symbolic link";
-
-      else if(S_ISSOCK(buf.st_mode)) ptr = "socket";
-
-      else    ptr = "** Unknown Mode **";
-
-      printf("%s\n", ptr);
-    }
-
+   //get the current working directory of this process
+   if(getcwd(buff, MAX_SIZE) < 0){
+       perror("Failed in getting current working directory");
+   }
+   else{
+      printf("%s\n", buff);
+   }
+   
+   //change the current working directory to /home/gtian
+   if(chdir("/home/cis356") < 0){
+       perror("Failed in changing current working directory");
+   }
+   else{
+        //get the current working directory of this process
+       if(getcwd(buff, MAX_SIZE) < 0){
+           perror("Failed in getting current working directory");
+       }
+       else{
+          printf("%s\n", buff);
+       }
+   }
 
    exit(0);
 
