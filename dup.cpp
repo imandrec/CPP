@@ -4,7 +4,6 @@
 #include <fcntl.h>
 int main()
 {
-
     // open() returns a file descriptor file_desc to a 
     // the file "dup.txt" here"
   
