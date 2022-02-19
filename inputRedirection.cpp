@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+
 int main(int argc, char * argv[]){
 
     close(0);  //close standard input file descriptor
