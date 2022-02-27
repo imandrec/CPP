@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+
 //Print the type of file for command-line argument
 int main(int argc, char *argv[]){
     struct stat statbuf;
