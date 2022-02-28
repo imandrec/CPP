@@ -30,10 +30,15 @@ struct command_t
 };
 void printPrompt()
 {
-	string prompt = "<<";
-	cout << prompt;
-}
+    char tmp[256];
+    getcwd(tmp, 256);
+    cout<<"HeckerMan@@<<"<<tmp;
 
+}
+void platform_setCurrentWorkingDir(const char *path)
+{
+    chdir(path);
+}
 void readCommand(char *buffer)
 {
 	//gets(buffer); //cannot use because of no check of buffer overrun in gets
@@ -351,6 +356,7 @@ int main(int argc , char * argv[])
 	bool isIOCommand = false;
 	bool greaterSign = false;
 	bool lesserSign = false;
+	platform_setCurrentWorkingDir("/c");
 	while(true)
 	{
 		isCommandCD = false;
