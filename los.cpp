@@ -1,433 +1,403 @@
-#include<iostream>
-#include <fstream>
-#include<unistd.h>
-#include <stdlib.h>
-#include<sys/wait.h>
+#include <iostream>
+#include<bits/stdc++.h>
+#include <unistd.h>
 #include <stdio.h>
-#include <cstring>
-#include <sys/shm.h>
-#include <sys/stat.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <sys/wait.h>
+#define PATH_MAX 1024
 using namespace std;
 
-#define LINE_LEN 80
-#define MAX_ARGS 64
-#define MAX_ARG_LEN 16
-#define MAX_PATHS 64
-#define MAX_PATH_LEN 96
-#define WHITESPACE " .,\t\n"
-
-#ifndef NULL
-#define NULL
-#endif
-
-struct command_t
+void handler(int signum)
 {
-	char * name;
-	int argc;
-	char* argv[MAX_ARGS];
-};
-void printPrompt()
-{
-    char tmp[256];
-    getcwd(tmp, 256);
-    cout<<"HeckerMan@@<<"<<tmp;
-
+    wait(NULL);
 }
-void platform_setCurrentWorkingDir(const char *path)
-{
-    chdir(path);
-}
-void readCommand(char *buffer)
-{
-	//gets(buffer); //cannot use because of no check of buffer overrun in gets
-	cin.getline(buffer,60,'\n');
-}
-void parsePath(char *dirs[])
-{
-	char* pathEnvVar;	
-	for(int i=0; i<MAX_PATHS; i++)
-	{
-		dirs[i] = NULL;
-	}
-	//search for environment variable PATH
-	pathEnvVar = strdup(getenv("PATH")); //getenv gets the PATH absolute directories name
-	//cout << "pathEnvVar " << pathEnvVar << endl; //to check
-	char* token;
-	token = strtok(pathEnvVar,":");
-	int i = 0;
-	if(token != NULL)
-	{	cout << endl;
-		
-		dirs[i] = token;
-		i++;
-		while(token != NULL)
-		{
-			token = strtok(NULL,":");
-			dirs[i] = token;
-			i++;
-		}
-	}
+
+string readLines(){
+    string getInput;
+    getline(cin,getInput);
+
+    if(!cin){
+        cout<<"Ctrl D is pressed Exit the Shell"<<endl;
+        exit(1);
+    }
+    return getInput;
 }
 
 
 
-void parseCommand(char * str , command_t * com , bool& isCommandCD)
-{
-	char*token;
-	token=strtok(str," ");
-	if(token[0] == 'c' && token[1] == 'd')
-	{
-		isCommandCD = true;
-		if(chdir(str+3) < 0)
-		{
-			cout << "cannot change directory" << endl;
-		}
-		else
-		{
-			return;
-		}
-	}
-	com->argc=0;
-	int i=0;
-	if(token!=NULL)
-	{
-		com->argv[i]=token;
-		
-		i++;
-		while(token!=NULL)
-		{
-			//cout << token << endl; //to check
-			token=strtok(NULL," ");
-			com->argv[i]= token;
-			i++;
-			com->argc++;
-		}
-	}
-	i++;
-	com->argv[i]=NULL;
+vector<string> tokenize(string getInput){
+    vector <string> args;
+    string intermediate;
+    stringstream getInputStream(getInput);
+
+    while(getline(getInputStream,intermediate, ' ')){
+        args.push_back(intermediate);
+    }
+    for(size_t i=0;i<args.size();i++){
+        if(args[i].empty())
+            args.erase(args.begin()+i);
+    }
+    return args;
 }
 
-char * lookUpPath(char ** argv , char ** dir)
-{	
-	char * result = new char [50];
-	char pName[MAX_PATH_LEN];
-	if(argv[0][0] == '.' && argv[0][1] == '/')
-	{
-		//F_OK existence test mode
-		int allow = access(argv[0] , F_OK); //access return 0 if accces allowed else -1
-	
-		if(allow == 0)
-			return argv[0];
-		return NULL;
-	}
-	int i = 0;
-	for(i; dir[i] != NULL; i++)
-	{	
-		strcpy(result , dir[i]);
-		strcat(result , "/");
-		strcat(result , argv[0]);
-		int allow = access(result, F_OK);
-//cout << result << endl;
-		if(allow == 0)
-		{
-			return result;
-		}
-	} 
-	
-	cout<<"File Name Not found in any path variable "<<endl;
-	return NULL;
+//Runs all the commands both in foreground and background
+ 
+
+int runTheCommand(vector<string> args,bool isBackground)
+{
+    pid_t pid, wpid;
+    int status;
+    char *argsPointer[args.size()];
+
+    for(size_t i=0; i<args.size();i++){
+        argsPointer[i]= const_cast<char *>(args[i].c_str());            //Convert vector to constant character pointer
+    }
+    argsPointer[args.size()]=NULL;
+
+    pid = fork();
+
+    if (pid == 0) {
+
+        if(isBackground) {
+            setpgid(0, 0);                              
+        }                                                  
+
+        FILE *fp;
+
+        if ((fp = fopen("Mypath.txt", "r")) != NULL && args[0]=="myls")     //Check Mypath is set for myls
+        {                                                                   //MyPath is saved in a file
+            int n=0;
+            while(fgetc(fp) !=EOF){
+                n=n+1;
+            }
+
+            char c[n];
+            fseek(fp, 0, SEEK_SET);
+            fscanf(fp, "%s", c);
+            fclose(fp);
+            c[n]='\0';
+            //char *mylsArgs[]={c, NULL};
+            if(execvp(c,argsPointer)==-1)             //execute myls
+            {
+                perror("UnixShell");
+            }
+            exit(EXIT_FAILURE);
+        }
+
+        else if(args[0]=="myls"){
+            cout<<"Please set the path of myls"<<endl;
+        }
+
+        else{
+            if (execvp(argsPointer[0], argsPointer) == -1) {            //Execute all the commands
+                perror("UnixShell");
+            }
+            exit(EXIT_FAILURE);
+        }
+
+    } else if (pid < 0) {
+        perror("UnixShell");
+
+    } else {
+        if(isBackground){                                           //Signal the handler to manage the child process
+            signal(SIGCHLD, handler);                               //Return immediately
+            wpid = waitpid(pid, &status, WNOHANG);
+        }
+        else{
+            do {
+                wpid = waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));       //wait till child finished execution
+        }
+    }
+    return 0;
 }
-void parsePipedCommand(char * str)
-{
-	char** pipes = new char*[10];
-	char** pipes_second = new char*[10]; //second copy of pipes just for parsing because strtok destroy originals
-	
-	for(int i=0; i<10; i++)
-	{
-		pipes[i] = NULL;
-		pipes_second[i] = NULL;
-	}
-	char*token = (strtok(str,"|\n"));
-	int i=0;
-	while(token != NULL)
-	{
-		pipes[i] = new char[strlen(token)+1];
-		pipes_second[i] = new char[strlen(token)+1];
-		strcpy(pipes[i],token);
-		strcpy(pipes_second[i],token);
-		//cout << pipes[i] << endl;
-		token = strtok(NULL,"|\n");
-		i++;
-	}
-	pipes[i] = NULL;
-	pipes_second[i] = NULL;
-//Till here pipes command are parsed
 
-	char** commands = new char*[64];
-	for(int i=0; i<64; i++)
-	{
-		commands[i] = NULL;
-	}
-	int ** pp = new int*[20];
-	for(int i=0; i<20; i++)
-	{
-		pp[i] = new int[2];
-	}
-	
-	int saveINPPUTSTATE = dup(0);
-	int saveOUTPUTSTATE = dup(1);
+//IO IORedirection
+int IORedirection(vector<string> args, bool isBackground){
+
+    pid_t pid, wpid;
+    int status;
+    vector <string>::iterator itGreat;
+    vector <string>::iterator itLess;
+
+    pid = fork();
+
+    if (pid == 0) {
+
+        if (isBackground) {
+            setpgid(0, 0);
+        }
+
+        char *argsPointer[args.size()];
+
+        itLess=find(args.begin(),args.end(),"<");
+
+        if(itLess != args.end()){                   //Handles getInput redirection
+            args.erase(itLess);
+        }
+
+        itGreat=find(args.begin(),args.end(),">");
+
+        if(itGreat != args.end()){                  //Handles output redirection by changing the stdin and stdout
+            int in;
+            int out;
+            long index=distance(args.begin(),itGreat);
+
+            in=open(args[index-1].c_str(),O_RDONLY);
+
+            if(in<0){
+                cout<<"The getInput file " <<args[index-1]<<" is missing. Error!!!"<<endl;
+                exit(EXIT_FAILURE);
+            }
+
+            out=open(args.back().c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+            dup2(in,fileno(stdin));
+            dup2(out,fileno(stdout));
+            close(in);
+            close(out);
+
+            args.erase(itGreat+1);
+            args.erase(itGreat);
+
+        }
 
 
-	for(int i=0;pipes[i] != NULL;i++)
-	{
-		int j=0;
-		char*token1 = (strtok(pipes_second[i]," "));
-		while(token1!= NULL)
-		{
-			commands[j] = new char[strlen(token1)+1];
-			strcpy(commands[j],token1);
-			//cout << commands[j] << endl;
-			token1 = strtok(NULL," ");
-			j++;
-		}
-		commands[j] = NULL;
-		if(pipe(pp[i]) == -1)
-		{
-			cout << "PIPE FAILED TO CREATE " << endl;
-		}
-		pid_t id = fork();
-		if(id == 0) //child
-		{
-	
-			if(pipes[i+1] == NULL) //if last command is NULL then redrect to screen again
-			{
-								
-				dup2(saveOUTPUTSTATE,1);
-			}
-			else
-			{
-				dup2(pp[i][1], 1);
-			}
-			execvp(commands[0],commands);
+        for(size_t i=0; i<args.size();i++){
+            argsPointer[i]= const_cast<char *>(args[i].c_str());
+        }
 
-		}
-		else
-		{
-			wait(NULL);
+        argsPointer[args.size()]=NULL;
 
-				dup2(pp[i][0],0);
+        if (execvp(argsPointer[0], argsPointer) == -1) {
+            perror("UnixShell");
 
-				close(pp[i][1]);
+        }
+        exit(EXIT_FAILURE);
 
-			if(pipes[i+1] == NULL)
-			{
+    }
+    else if (pid < 0) {
+        perror("UnixShell");
+    }
+    else {
+        if(isBackground){
+            signal(SIGCHLD, handler);
+            wpid = waitpid(pid, &status, WNOHANG);
+        }
+        else{
+            do {
+                wpid = waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+        }
 
-				dup2(saveINPPUTSTATE,0);
-			}
-	
-		}
-	}
-}	
-
-void parseIOCommand(char * str , bool greaterSign , bool lesserSign)
-{
-	//cout << "we areIN" << endl;
-	char** redirect = new char*[2];
-	for(int i=0; i<2; i++)
-	{
-		redirect[i] = NULL;
-	}
-	int saveINPPUTSTATE = dup(0);
-	int saveOUTPUTSTATE = dup(1);
-	if(greaterSign == true && lesserSign == false)
-	{
-//cout << "we areIN2" << endl;
-		char*token = (strtok(str,">\n"));
-		int i=0;
-		while(token != NULL)
-		{
-			redirect[i] = new char[strlen(token)+1];
-			strcpy(redirect[i],token);
-//cout << redirect[i] << endl;
-			token = strtok(NULL,">\n");
-			i++;
-		}
-		redirect[i] = NULL;
-		bool isPipedCommand = false;
-		for(int i = 0; i < strlen(redirect[0]); i++)
-		{
-			if(redirect[0][i] == '|')
-				isPipedCommand = true;
-		}
-		int f1 = open(redirect[1],O_CREAT | O_WRONLY, S_IRWXU);
-		dup2(f1,1);
-		if(isPipedCommand == true)
-		{
-			parsePipedCommand(redirect[0]);		
-		}
-		else
-		{
-			char** commands = new char*[64];
-			for(int i=0; i<64; i++)
-			{
-				commands[i] = NULL;
-			}
-			int j=0;
-			char*token1 = (strtok(redirect[0]," "));
-			while(token1!= NULL)
-			{
-				commands[j] = new char[strlen(token1)+1];
-				strcpy(commands[j],token1);
-				//cout << commands[j] << endl;
-				token1 = strtok(NULL," ");
-				j++;
-			}
-			commands[j] = NULL;
-			execvp(commands[0],commands);
-		}
-
-		dup2(saveOUTPUTSTATE,1);
-	}
-	else
-	{
-		char*token = (strtok(str,"<\n"));
-		int i=0;
-		while(token != NULL)
-		{
-			redirect[i] = new char[strlen(token)+1];
-			strcpy(redirect[i],token);
-
-			token = strtok(NULL,"<\n");
-			i++;
-		}
-		redirect[i] = NULL;
-		bool isPipedCommand = false;
-		for(int i = 0; i < strlen(redirect[0]); i++)
-		{
-			if(redirect[0][i] == '|')
-				isPipedCommand = true;
-		}
-		//int f1 = open(redirect[1],O_CREAT | O_WRONLY, S_IRWXU);
-		int fd = open(redirect[1],O_RDONLY);
-		dup2(fd,0);
-		if(isPipedCommand == true)
-		{
-			parsePipedCommand(redirect[0]);		
-		}
-		else
-		{
-			char** commands = new char*[64];
-			for(int i=0; i<64; i++)
-			{
-				commands[i] = NULL;
-			}
-			int j=0;
-			char*token1 = (strtok(redirect[0]," "));
-			while(token1!= NULL)
-			{
-				commands[j] = new char[strlen(token1)+1];
-				strcpy(commands[j],token1);
-				//cout << commands[j] << endl;
-				token1 = strtok(NULL," ");
-				j++;
-			}
-			commands[j] = NULL;
-			execvp(commands[0],commands);
-		}
-
-		dup2(saveINPPUTSTATE,0);
-	}
+    }
+    return 0;
 
 }
 
 
-int main(int argc , char * argv[])
-{
-	char * pathv[MAX_PATHS];
-	parsePath(pathv);
-	char  commandLine[60];
-	command_t com;
-	com.name = NULL;
-	com.argc = 0;
-	bool isCommandCD = false;
-	bool isPipedCommand = false;
-	bool isIOCommand = false;
-	bool greaterSign = false;
-	bool lesserSign = false;
-	platform_setCurrentWorkingDir("/c");
-	while(true)
-	{
-		isCommandCD = false;
-		isPipedCommand = false;
-		isIOCommand = false;
-		greaterSign = false;
-		lesserSign = false;
-		printPrompt();
-		readCommand(commandLine);
-		if(commandLine[0] == 'e' && commandLine[1] == 'x' && commandLine[2] == 'i' && commandLine[3]=='t' )
-		{
-			return 0;
-		}
-		int len = strlen(commandLine);
-		for(int i = 0; i<len && isIOCommand == false; i++)
-		{
-			if(commandLine[i] == '>'){
-				isIOCommand = true;
-				greaterSign = true;
-			}
-			if(commandLine[i] == '<'){
-				isIOCommand = true;
-				lesserSign = true;
-			}
-		}
-		for(int i=0; i<len && isPipedCommand == false && isIOCommand == false; i++)
-		{
-			if(commandLine[i] == '|'){
-				isPipedCommand = true;
-			}
-		}
-		if(isIOCommand == true && isPipedCommand == false)
-		{
-			parseIOCommand(commandLine,greaterSign,lesserSign);
-		}
-		if(isPipedCommand == true && isIOCommand == false)
-		{
-			parsePipedCommand(commandLine);
-		}
-		else
-		{
-			parseCommand(commandLine , &com , isCommandCD);
-		}
-		if(isCommandCD == false && isPipedCommand == false && isIOCommand == false)
-		{
-			com.name = lookUpPath(com.argv , pathv);
-			if(com.name == NULL)
-			{
-				cout<<"ERROR!"<<endl;
-			}
-			else 
-			{
-				pid_t pid = fork();
-				if(pid == 0)
-				{
+int pipeExecute(string getInput){
 
-					execv(com.name , com.argv);
-					cout<<"Command is not Found"<<endl;
-				}
-				if(pid > 0)
-				{
-					wait(NULL);
-				}
-				
-			}	
-		}
-		else
-		{
-			isCommandCD = false;
-		}
-		
-	}
-	return 0;	
+    stringstream getInputStream(getInput);
+    string intermediate;
+    int pipefd[2];
+    int status;
+    vector <string> args;
+    pid_t pid, wpid;
+    int fd=0;
+    int count=0;
+    long n = std::count(getInput.begin(), getInput.end(), '|');
+
+
+    while(getline(getInputStream,intermediate , '|')) {
+
+        count++;
+        args = tokenize(intermediate);
+
+        char *argsPointer[args.size()];
+        for (size_t i = 0; i < args.size(); i++) {
+            argsPointer[i] = const_cast<char *>(args[i].c_str());
+        }
+        argsPointer[args.size()] = NULL;
+
+        pipe(pipefd);                                   //Pipe the getInput and output
+        pid = fork();
+
+        if (pid == 0) {
+            close(pipefd[0]);
+            dup2(fd,fileno(stdin));                 
+
+            if(count!=n+1){                         
+                dup2(pipefd[1],fileno(stdout));     
+            }
+
+            FILE *fp;
+
+            if ((fp = fopen("Mypath.txt", "r")) != NULL && args[0]=="myls")     
+            {
+                int n=0;
+                while(fgetc(fp) !=EOF){
+                    n=n+1;
+                }
+
+                char c[n];
+                fseek(fp, 0, SEEK_SET);
+                fscanf(fp, "%s", c);
+                fclose(fp);
+                c[n]='\0';
+                //char *mylsArgs[]={c, NULL};
+
+                if(execvp(c,argsPointer)==-1)
+                {
+                    perror("UnixShell");
+                }
+                exit(EXIT_FAILURE);
+            }
+
+            else if(args[0]=="myls"){
+                cout<<"Please set the path of myls"<<endl;
+            }
+            else {
+                if (execvp(argsPointer[0], argsPointer) == -1) {
+                    perror("UnixShell");
+                }
+                exit(EXIT_FAILURE);
+            }
+        }
+        else if (pid < 0) {
+            perror("UnixShell");
+        }
+        else {
+            do {
+                wpid = waitpid(pid, &status, WUNTRACED);
+            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+
+            close(pipefd[1]);
+            fd=pipefd[0];
+        }
+    }
+    return 0;
+}
+
+
+
+int executeCD(vector<string> args){
+
+    int ret;
+    char cwd[PATH_MAX];
+
+    if(args[1].empty()){
+        cout<<"Missing directory. Error Occurred :(!!!"<<endl;
+        return -1;
+    }
+    if(args[1][0]=='/'){
+        ret=chdir(args[1].c_str());
+    }
+    else if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            string str=cwd;
+            ret=chdir((str+"/"+args[1]).c_str());
+    }
+
+    else{
+        ret=-1;
+    }
+
+    if(ret==0){
+        cout<<"Directory Successfully changed to"<<endl;
+        cout<<args[1]<<endl;
+    }
+    else{
+        cout<<"Failed to Change the Directory. Error Occurred :(!!!"<<endl;
+        cout<<"Error Occurred :( Code :"<<ret<<endl;
+    }
+
+    return ret;
+
+}
+
+int main() {
+
+    string getInput;
+    vector <string> args;
+    int status;
+    bool isBackground;
+    vector <string>::iterator itGreat;
+    vector <string>::iterator itLess;
+
+
+    do {
+
+        char tmp[256];
+        getcwd(tmp, 256);
+        cout<<"HeckerMan@@"<<tmp<<"<<";
+        getInput = readLines();
+        isBackground = false;
+
+        size_t isPiped = string::npos;
+        isPiped = getInput.find("|");
+
+        if (isPiped != string::npos) {      //Handle piped commands
+            pipeExecute(getInput);
+            continue;
+        }
+
+        args = tokenize(getInput);                 //Handle background process
+        if (args.back() == "&") {
+            args.pop_back();
+            isBackground = true;
+        }
+
+        itGreat = find(args.begin(), args.end(), ">");
+        itLess = find(args.begin(), args.end(), "<");
+
+        if (itGreat != args.end() || itLess != args.end()) {        //Handles IO redirection
+            status = IORedirection(args, isBackground);
+            continue;
+        }
+
+        if (args[0] == "exit") {                            //exit the shell
+            cout << "Exiting the Shell" << endl;
+            exit(0);
+        }
+        else if (args[0] == "cd") {                         //Change the directory
+            executeCD(args);
+        }
+        else if (args[0] == "pwd") {                        //Display Current directory
+            char cwd[PATH_MAX];
+            if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                cout << "The current working directory is: " << endl << cwd << endl;
+            }
+            else {
+                cout << "There was a Error Occurred :( in getcwd()!!!" << endl;
+            }
+
+        }
+        else if (args[0] == "set") {                //Set the my path by saving in the file
+
+            FILE *fp;
+            fp = fopen("Mypath.txt", "w");
+
+            if (fp != NULL) {
+                size_t index = args[1].find("=");
+                if (index != string::npos) {
+                    fputs((args[1].substr((index + 1), (args[1].size() - 1))).c_str(), fp);
+                    cout << "Path was set successfully" << endl;
+                    fclose(fp);
+                }
+                else {
+                    cout << "Error Occurred :( in setting the path. The format is set MYPATH=path1" << endl;
+                }
+            }
+            else {
+                cout << "Error while setting the path. Please try again" << endl;
+            }
+        }
+        else {
+            status = runTheCommand(args, isBackground);     //Runs all the other commands
+        }
+
+    }while(true);
+
+    return 0;
 }
