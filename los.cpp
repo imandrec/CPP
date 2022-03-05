@@ -9,7 +9,6 @@
 #define PATH_MAX 1024
 using namespace std;
 
-
 void handler(int signum)
 {
     wait(NULL);
