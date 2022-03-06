@@ -17,7 +17,6 @@ void handler(int signum)
 string readLines(){
     string getInput;
     getline(cin,getInput);
-
     if(!cin){
         cout<<"Ctrl D is pressed Exit the Shell"<<endl;
         exit(1);
