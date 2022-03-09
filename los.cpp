@@ -14,51 +14,6 @@ void handler(int signum)
     wait(NULL);
 }
 
-string readLines(){
-    string getInput;
-    getline(cin,getInput);
-    if(!cin){
-        cout<<"Ctrl D is pressed Exit the Shell"<<endl;
-        exit(1);
-    }
-    return getInput;
-}
-
-
-
-vector<string> tokenize(string getInput){
-    vector <string> args;
-    string intermediate;
-    stringstream getInputStream(getInput);
-
-    while(getline(getInputStream,intermediate, ' ')){
-        args.push_back(intermediate);
-    }
-    for(size_t i=0;i<args.size();i++){
-        if(args[i].empty())
-            args.erase(args.begin()+i);
-    }
-    return args;
-}
-
-//Runs all the commands both in foreground and background
- 
-
-int runTheCommand(vector<string> args,bool isBackground)
-{
-    pid_t pid, wpid;
-    int status;
-    char *argsPointer[args.size()];
-
-    for(size_t i=0; i<args.size();i++){
-        argsPointer[i]= const_cast<char *>(args[i].c_str());            //Convert vector to constant character pointer
-    }
-    argsPointer[args.size()]=NULL;
-
-    pid = fork();
-
-    if (pid == 0) {
-
         if(isBackground) {
             setpgid(0, 0);                              
         }                                                  
