@@ -1,401 +1,183 @@
-#include<bits/stdc++.h>
-#include <unistd.h>
+#include <iostream>
+#include <vector>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <pwd.h>
+#include <grp.h> // getgrid function
+#include <algorithm>
 #include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
+#include <ctype.h>
+#include <dirent.h>
 #include <fcntl.h>
-#include <sys/wait.h>
-#define PATH_MAX 1024
+#include <unistd.h>
+#include <string.h>
+#include <time.h>
+#include <sys/types.h>
+#include<fstream>
+
 using namespace std;
 
-void handler(int signum)
-{
-    wait(NULL);
+void myls(){
+    vector<string> fileNameList;
+    DIR *d;
+    struct dirent *dir;
+    struct stat fileStat;
+    char time[80];
+
+    d = opendir(".");                   //Get all the files in current directory
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+                fileNameList.push_back(dir->d_name);       //Add all the file names to vector
+        }
+        closedir(d);
+    }
+    else{
+        cout<<"Failed to Open the Current Directory. Error!!!"<<endl;
+    }
+
+    sort(fileNameList.begin(),fileNameList.end());
+
+
+    for(size_t i=0;i<fileNameList.size();i++) {
+
+        if (stat(fileNameList[i].c_str(), &fileStat) < 0) {                             //Get all the file stats
+            cout << "Error in getting information of file "<< fileNameList[i] << endl;
+        }
+        else {
+            cout<<(S_ISDIR(fileStat.st_mode) ? "d" : "-");                              //Print all the file stats
+            cout<<((fileStat.st_mode & S_IRUSR) ? "r" : "-");
+            cout<<((fileStat.st_mode & S_IWUSR) ? "w" : "-");
+            cout<<((fileStat.st_mode & S_IXUSR) ? "x" : "-");
+            cout<<((fileStat.st_mode & S_IRGRP) ? "r" : "-");
+            cout<<((fileStat.st_mode & S_IWGRP) ? "w" : "-");
+            cout<<((fileStat.st_mode & S_IXGRP) ? "x" : "-");
+            cout<<((fileStat.st_mode & S_IROTH) ? "r" : "-");
+            cout<<((fileStat.st_mode & S_IWOTH) ? "w" : "-");
+            cout<<((fileStat.st_mode & S_IXOTH) ? "x" : "-");
+            cout<<"\t";
+            cout<<fileStat.st_nlink;
+            cout<<"\t";
+            cout<<getpwuid(fileStat.st_uid)->pw_name;
+            cout<<"\t";
+            cout<<getgrgid(fileStat.st_gid)->gr_name;
+            cout<<"\t";
+            cout<<fileStat.st_size;
+            cout<<"\t";
+            strftime(time, 80, "%b %d %I:%M", localtime(&fileStat.st_mtime));
+            cout<<time;
+            cout<<"\t";
+            cout<<fileNameList[i];
+            cout<<endl;
+
+        }
+    }
 }
 
-string readLines(){
-    string getInput;
-    getline(cin,getInput);
+void getUID_PPID_C(char* pid, char*UID, int &PPID, int &CCC){
+    FILE *filePointer ;
+    char path[256];
+    char *information = new char [256];
+    sprintf(path, "/proc/%s/status", pid);
+    char *inf;
+    filePointer = fopen(path, "r") ;
 
-    if(!cin){
-        cout<<"Ctrl D is pressed Exit the Shell"<<endl;
-        exit(1);
+    for(int i = 0; i< 5; i++){ // ignore first 4 lines
+        fgets ( information, 255, filePointer );
     }
-    return getInput;
-}
+    
+    //extract C information from the process information
+    inf = strtok(information,"\t"); // parse with space
+    inf = strtok(NULL, "\t"); // parse with space
+    CCC = atoi(inf);
 
+    fgets ( information, 255, filePointer );
+    fgets ( information, 255, filePointer );
 
-vector<string> tokenize(string getInput){
-    vector <string> args;
-    string intermediate;
-    stringstream getInputStream(getInput);
-
-    while(getline(getInputStream,intermediate, ' ')){
-        args.push_back(intermediate);
-    }
-    for(size_t i=0;i<args.size();i++){
-        if(args[i].empty())
-            args.erase(args.begin()+i);
-    }
-    return args;
-}
-
-//Runs all the commands both in foreground and background
- 
-
-int runTheCommand(vector<string> args,bool isBackground)
-{
-    pid_t pid, wpid;
-    int status;
-    char *argsPointer[args.size()];
-
-    for(size_t i=0; i<args.size();i++){
-        argsPointer[i]= const_cast<char *>(args[i].c_str());            //Convert vector to constant character pointer
-    }
-    argsPointer[args.size()]=NULL;
-
-    pid = fork();
-
-    if (pid == 0) {
-
-        if(isBackground) {
-            setpgid(0, 0);                              
-        }                                                  
-
-        FILE *fp;
-
-        if ((fp = fopen("Mypath.txt", "r")) != NULL && args[0]=="myls")     //Check Mypath is set for myls
-        {                                                                   //MyPath is saved in a file
-            int n=0;
-            while(fgetc(fp) !=EOF){
-                n=n+1;
-            }
-
-            char c[n];
-            fseek(fp, 0, SEEK_SET);
-            fscanf(fp, "%s", c);
-            fclose(fp);
-            c[n]='\0';
-            //char *mylsArgs[]={c, NULL};
-            if(execvp(c,argsPointer)==-1)             //execute myls
-            {
-                perror("UnixShell");
-            }
-            exit(EXIT_FAILURE);
-        }
-
-        else if(args[0]=="myls"){
-            cout<<"Please set the path of myls"<<endl;
-        }
-
-        else{
-            if (execvp(argsPointer[0], argsPointer) == -1) {            //Execute all the commands
-                perror("UnixShell");
-            }
-            exit(EXIT_FAILURE);
-        }
-
-    } else if (pid < 0) {
-        perror("UnixShell");
-
-    } else {
-        if(isBackground){                                           //Signal the handler to manage the child process
-            signal(SIGCHLD, handler);                               //Return immediately
-            wpid = waitpid(pid, &status, WNOHANG);
-        }
-        else{
-            do {
-                wpid = waitpid(pid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));       //wait till child finished execution
-        }
-    }
-    return 0;
-}
-
-//IO IORedirection
-int IORedirection(vector<string> args, bool isBackground){
-
-    pid_t pid, wpid;
-    int status;
-    vector <string>::iterator itGreat;
-    vector <string>::iterator itLess;
-
-    pid = fork();
-
-    if (pid == 0) {
-
-        if (isBackground) {
-            setpgid(0, 0);
-        }
-
-        char *argsPointer[args.size()];
-
-        itLess=find(args.begin(),args.end(),"<");
-
-        if(itLess != args.end()){                   //Handles getInput redirection
-            args.erase(itLess);
-        }
-
-        itGreat=find(args.begin(),args.end(),">");
-
-        if(itGreat != args.end()){                  //Handles output redirection by changing the stdin and stdout
-            int in;
-            int out;
-            long index=distance(args.begin(),itGreat);
-
-            in=open(args[index-1].c_str(),O_RDONLY);
-
-            if(in<0){
-                cout<<"The getInput file " <<args[index-1]<<" is missing. Error!!!"<<endl;
-                exit(EXIT_FAILURE);
-            }
-
-            out=open(args.back().c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
-            dup2(in,fileno(stdin));
-            dup2(out,fileno(stdout));
-            close(in);
-            close(out);
-
-            args.erase(itGreat+1);
-            args.erase(itGreat);
-
-        }
-
-
-        for(size_t i=0; i<args.size();i++){
-            argsPointer[i]= const_cast<char *>(args[i].c_str());
-        }
-
-        argsPointer[args.size()]=NULL;
-
-        if (execvp(argsPointer[0], argsPointer) == -1) {
-            perror("UnixShell");
-
-        }
-        exit(EXIT_FAILURE);
-
-    }
-    else if (pid < 0) {
-        perror("UnixShell");
+    //extract ppid information
+    inf = strtok(information,"\t"); // parse with space
+    inf = strtok(NULL, "\t"); // parse with space
+    PPID = atoi(inf);
+    fgets ( information, 255, filePointer ); //ignore 9th line
+    fgets ( information, 255, filePointer );
+    
+    
+    //extract UID inormation
+    inf = strtok(information,"\t"); // parse with space
+    inf = strtok(NULL, "\t"); // parse with space
+    
+    if(atoi(inf) == 0){
+        strcpy(UID, "root");
     }
     else {
-        if(isBackground){
-            signal(SIGCHLD, handler);
-            wpid = waitpid(pid, &status, WNOHANG);
-        }
-        else{
-            do {
-                wpid = waitpid(pid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-        }
-
+        getlogin_r(UID,256);
     }
-    return 0;
-
 }
 
-
-int pipeExecute(string getInput){
-
-    stringstream getInputStream(getInput);
-    string intermediate;
-    int pipefd[2];
-    int status;
-    vector <string> args;
-    pid_t pid, wpid;
-    int fd=0;
-    int count=0;
-    long n = std::count(getInput.begin(), getInput.end(), '|');
-
-
-    while(getline(getInputStream,intermediate , '|')) {
-
-        count++;
-        args = tokenize(intermediate);
-
-        char *argsPointer[args.size()];
-        for (size_t i = 0; i < args.size(); i++) {
-            argsPointer[i] = const_cast<char *>(args[i].c_str());
-        }
-        argsPointer[args.size()] = NULL;
-
-        pipe(pipefd);                                   //Pipe the getInput and output
-        pid = fork();
-
-        if (pid == 0) {
-            close(pipefd[0]);
-            dup2(fd,fileno(stdin));                 
-
-            if(count!=n+1){                         
-                dup2(pipefd[1],fileno(stdout));     
+void myps(){
+    DIR *directory;
+    int fd1;
+    int fd2;
+    unsigned long currTime, startTime;
+    char flag, flagReq, *tty;
+    char cmd[256];
+    char tty_self[256];
+    char path[256];
+    char UID[256];
+    int PPID;
+    int CCC;
+    int i;
+    char time_s[256];
+    FILE* file;
+    struct dirent *ent;
+    
+    directory = opendir("/proc");
+    fd1 = open("/proc/self/fd/0", O_RDONLY);
+    sprintf(tty_self, "%s", ttyname(fd1));
+    cout<<"UID \t PID \t PPID \t C \t TTY \t TIME \t\t CMD\n";    
+    
+    while ((ent = readdir(directory)) != NULL) {
+        flag = 1;
+        for (i = 0; ent->d_name[i]; i++) {
+            if (!isdigit(ent->d_name[i])){ 
+                flag = 0;
+                break;
             }
+        }
+        if (flag) {
+            sprintf(path, "/proc/%s/fd/0", ent->d_name);
+            fd2 = open(path, O_RDONLY);
+                
+            sprintf(path, "/proc/%s/stat", ent->d_name);
+            file = fopen(path, "r");
+            fscanf(file, "%d%s%c%c%c", &i, cmd, &flag, &flag, &flagReq);
+            cmd[strlen(cmd) - 1] = '\0';
+            
 
-            FILE *fp;
+            //read currTime from the file
+            for (i = 0; i < 11; i++)
+                fscanf(file, "%lu", &currTime);
+            fscanf(file, "%lu", &startTime);
+            currTime = (int)((double)(currTime + startTime) / sysconf(_SC_CLK_TCK));
+            sprintf(time_s, "%02lu:%02lu:%02lu",(currTime / 3600) % 3600, (currTime / 60) % 60, currTime % 60);
 
-            if ((fp = fopen("Mypath.txt", "r")) != NULL && args[0]=="myls")     
-            {
-                int n=0;
-                while(fgetc(fp) !=EOF){
-                    n=n+1;
+            tty = ttyname(fd2);
+            ent->d_name[5] = '\0';
+            time_s[8] = '\0';
+            getUID_PPID_C(ent->d_name, UID, PPID, CCC);
+            cout<<UID<<" \t ";
+            cout<<ent->d_name<<" \t " <<PPID<<" \t " <<CCC<<"\t";
+            if(tty)
+                for(int i = 5; tty[i]!='\0'; i++){
+                    cout<<tty[i];
                 }
-
-                char c[n];
-                fseek(fp, 0, SEEK_SET);
-                fscanf(fp, "%s", c);
-                fclose(fp);
-                c[n]='\0';
-                //char *mylsArgs[]={c, NULL};
-
-                if(execvp(c,argsPointer)==-1)
-                {
-                    perror("UnixShell");
-                }
-                exit(EXIT_FAILURE);
+            else{
+                cout<<"?";
             }
-
-            else if(args[0]=="myls"){
-                cout<<"Please set the path of myls"<<endl;
-            }
-            else {
-                if (execvp(argsPointer[0], argsPointer) == -1) {
-                    perror("UnixShell");
-                }
-                exit(EXIT_FAILURE);
-            }
-        }
-        else if (pid < 0) {
-            perror("UnixShell");
-        }
-        else {
-            do {
-                wpid = waitpid(pid, &status, WUNTRACED);
-            } while (!WIFEXITED(status) && !WIFSIGNALED(status));
-
-            close(pipefd[1]);
-            fd=pipefd[0];
+            cout<<" \t"<<time_s<<" \t "<<cmd+1 <<endl;
+            
+            fclose(file);
+            close(fd2);
         }
     }
-    return 0;
-}
-
-
-
-int executeCD(vector<string> args){
-
-    int ret;
-    char cwd[PATH_MAX];
-
-    if(args[1].empty()){
-        cout<<"Missing directory. Error Occurred :(!!!"<<endl;
-        return -1;
-    }
-    if(args[1][0]=='/'){
-        ret=chdir(args[1].c_str());
-    }
-    else if (getcwd(cwd, sizeof(cwd)) != NULL) {
-            string str=cwd;
-            ret=chdir((str+"/"+args[1]).c_str());
-    }
-
-    else{
-        ret=-1;
-    }
-
-    if(ret==0){
-        cout<<"Directory Successfully changed to"<<endl;
-        cout<<args[1]<<endl;
-    }
-    else{
-        cout<<"Failed to Change the Directory. Error Occurred :(!!!"<<endl;
-        cout<<"Error Occurred :( Code :"<<ret<<endl;
-    }
-
-    return ret;
-
-}
-
-int main() {
-
-    string getInput;
-    vector <string> args;
-    int status;
-    bool isBackground;
-    vector <string>::iterator itGreat;
-    vector <string>::iterator itLess;
-
-
-    do {
-
-        char tmp[256];
-        getcwd(tmp, 256);
-        cout<<"HeckerMan@@"<<tmp<<"<<";
-        getInput = readLines();
-        isBackground = false;
-
-        size_t isPiped = string::npos;
-        isPiped = getInput.find("|");
-
-        if (isPiped != string::npos) {      //Handle piped commands
-            pipeExecute(getInput);
-            continue;
-        }
-
-        args = tokenize(getInput);                 //Handle background process
-        if (args.back() == "&") {
-            args.pop_back();
-            isBackground = true;
-        }
-
-        itGreat = find(args.begin(), args.end(), ">");
-        itLess = find(args.begin(), args.end(), "<");
-
-        if (itGreat != args.end() || itLess != args.end()) {        //Handles IO redirection
-            status = IORedirection(args, isBackground);
-            continue;
-        }
-
-        if (args[0] == "exit") {                            //exit the shell
-            cout << "Exiting the Shell" << endl;
-            exit(0);
-        }
-        else if (args[0] == "cd") {                         //Change the directory
-            executeCD(args);
-        }
-        else if (args[0] == "pwd") {                        //Display Current directory
-            char cwd[PATH_MAX];
-            if (getcwd(cwd, sizeof(cwd)) != NULL) {
-                cout << "The current working directory is: " << endl << cwd << endl;
-            }
-            else {
-                cout << "There was a Error Occurred :( in getcwd()!!!" << endl;
-            }
-
-        }
-        else if (args[0] == "set") {                //Set the my path by saving in the file
-
-            FILE *fp;
-            fp = fopen("Mypath.txt", "w");
-
-            if (fp != NULL) {
-                size_t index = args[1].find("=");
-                if (index != string::npos) {
-                    fputs((args[1].substr((index + 1), (args[1].size() - 1))).c_str(), fp);
-                    cout << "Path was set successfully" << endl;
-                    fclose(fp);
-                }
-                else {
-                    cout << "Error Occurred :( in setting the path. The format is set MYPATH=path1" << endl;
-                }
-            }
-            else {
-                cout << "Error while setting the path. Please try again" << endl;
-            }
-        }
-        else {
-            status = runTheCommand(args, isBackground);     //Runs all the other commands
-        }
-
-    }while(true);
-
-    return 0;
+    close(fd1);
 }
