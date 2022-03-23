@@ -1,4 +1,0 @@
-// exit
-// cd
-// pwd
-// set
