@@ -29,7 +29,7 @@ int main(){
    if((pid = fork()) < 0){
      perror("Failed Fork");
      exit(-1);
-   }else if(pid == 0){
+   }else if(pid == 0){//ch
      //child
     // sleep(10);
      pid_t id = getpid(); 
