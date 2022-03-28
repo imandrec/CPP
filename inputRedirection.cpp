@@ -26,7 +26,6 @@ int main(int argc, char * argv[]){
    else{
        printf("The End");
    }
-
   close(fd);
 
   return 0;
