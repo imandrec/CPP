@@ -1,10 +1,11 @@
-#include <stdio.h>
 #include <limits.h>
 #include <string.h>
 #include <pthread.h>
+#include <iostream>
+using namespace std;
 
 int arr[5000];
-int size;
+int arrSize;
 
 struct parameters{
     int sSubIndex; // starting index of sub array
@@ -19,8 +20,8 @@ int readData(char *fileName) { // this program can read max 5000 integers from t
     file = fopen(fileName, "r");
 
     if (file == NULL) {
-        printf("File Not open\n ");
-        size = 0;
+        cout<<"File Not open\n ";
+        arrSize = 0;
         return -1;
     }
     int bufferSize = 1000;
@@ -38,7 +39,7 @@ int readData(char *fileName) { // this program can read max 5000 integers from t
         }
 	}
     
-    size = index;
+    arrSize = index;
 
     return 1;
 }
@@ -50,7 +51,7 @@ void* maximum_sum(void* para) {
     int sum = 0;
     for (int i = ptr->arraystart; i < ptr->arrayEnd; i++) {
         sum = 0;
-        for (int j = i; j < size; j++) {
+        for (int j = i; j < arrSize; j++) {
             sum += arr[j];
             if (sum > max_sum) {
                 ptr->sSubIndex  = i;
@@ -65,8 +66,9 @@ void* maximum_sum(void* para) {
 
 int main(int argc, char * argv[]) {
     if(argc != 2){
-        printf("\nCommand line argument not valid :-(");
-        printf("\n<EXE_FILE> <DATA_FILE>\n");
+        cout<<"\nCommand line argument not valid :-(";
+        cout<<"\n<EXE_FILE> <DATA_FILE>\n";
+        return -1;
     }
     if(readData(argv[1]) == -1){ //read data from the file
         return 0;
@@ -74,7 +76,7 @@ int main(int argc, char * argv[]) {
     struct parameters par;
     //prepare system for the parameters
     par.arraystart = 0;
-    par.arrayEnd = size;
+    par.arrayEnd = arrSize;
 
     pthread_t pid1;
 
@@ -83,10 +85,11 @@ int main(int argc, char * argv[]) {
 
     pthread_join(pid1,NULL);
 
-    printf("\nMax sum of the sub array : %d",par.MaxNumber);
-    printf("\nMax subarray : ");
+    cout<<"\nMax sum of the sub array : "<<par.MaxNumber;
+    cout<<"\nMax subarray : ";
+
     for(int i = par.sSubIndex; i <= par.eSubIndex; i++ ){
-        printf("%d, ",arr[i]);
+        cout<<arr[i]<<", ";
     }
     
     
