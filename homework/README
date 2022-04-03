@@ -1,0 +1,19 @@
+***********************************************************************************************************************************************************************************************
+								NOTE
+			Please dont try to change the  name of c files else make file will not be able to execute or compile the code
+
+
+Execution Instruction:
+                      You can execute the code with the help of the make file after the compilation of code by simply writing the "make" keyword on the terminal.
+                      after this, you need to use the command "make SingleThread_exe" if you want to execute the SingleThread program and for the MultiThread program you need to write "make MultiThread_exe"
+                      Please make sure one thing that if you are willing to execute the code with make file tags then you must need to create a file with the name "input.txt" in the same directory where you are executing the code.
+
+Restrictions:
+             Both programs can read 5000 integers from the file.
+             Please make sure that the file should consist of just integer values instead of float and double or any else data type.
+
+MultiThread Program:
+                    IN the multithreading program I'm using 3 threads that help us to speed up the computations time.
+                    the first thread will explore (0 to size/3) elements of the array
+                    second thread will explore (size/3 to (size/3) * 2) elements of the array
+                    Last thread will explore ((size/3) * 2 to size) elements of the array
