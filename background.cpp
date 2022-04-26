@@ -33,7 +33,6 @@ int main(){
      //child
     // sleep(10);
      pid_t id = getpid(); 
-
      printf("Child Process ID: %d, group id: %d\n", id, getpgrp());
  
      if(setpgid(0, 0) < 0){
