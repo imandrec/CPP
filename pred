@@ -1,8 +1,25 @@
-struct node* current = root;
-
-		/* loop down to find the leftmost leaf */
-		while (current->left != NULL)
+Node* DeleteKey(Node* root, int key) {
+		
+		if (root == NULL) return root;
+		if (key < root->data)
+			root->left = DeleteKey(root->left, key);
+		else if (key > root->data)
+			root->right = DeleteKey(root->right, key);
+		else 
 		{
-			current = current->left;
+			if (root->left == NULL) {
+				struct node* temp = root->right;
+				free(root);
+				return temp;
+			}
+			else if (root->right == NULL) {
+				struct node* temp = root->left;
+				free(root);
+				return temp;
+			}
+			struct node* temp = minValueNode(root->right);
+			root->key = temp->key;
+			root->right = DeleteKey(root->right, temp->key);
 		}
-		return(current);
+		return root;
+	}
