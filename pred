@@ -1,4 +1,8 @@
-if (!root) return nullptr;
-		root = root->right;
-		while (root->left) root = root->left;
-		return root;
+struct node* current = root;
+
+		/* loop down to find the leftmost leaf */
+		while (current->left != NULL)
+		{
+			current = current->left;
+		}
+		return(current);
