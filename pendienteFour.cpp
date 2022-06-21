@@ -11,18 +11,14 @@ int knapSack(int Capacity, int Weight[], int Value[], int n)
 	if (n == 0 || Capacity == 0)
 		return 0;
 
-	// If weight of an item is greater than capacity we cant include the item
+	// If weight of an item is greater than the capacity we cant include the item
 	if (Weight[n - 1] > Capacity)
 		return knapSack(Capacity, Weight, Value, n - 1);
 
-	// Return the maximum of two cases:
-	// (1) nth item included
-	// (2) not included
 	else
 		return max(
-			Value[n - 1] + knapSack(Capacity - Weight[n - 1],
-			Weight, Value, n - 1),
-			knapSack(Capacity, Weight, Value, n - 1));
+			Value[n - 1] + knapSack(Capacity - Weight[n - 1], Weight, Value, n - 1), // Item included
+			knapSack(Capacity, Weight, Value, n - 1)); //Not include Item
 }
 
 //Main function
