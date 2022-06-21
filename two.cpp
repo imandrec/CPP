@@ -4,7 +4,7 @@ using namespace std;
 
 // Global Array for
 // the purpose of memoization.
-int t[9][9];
+int t[11][11];
 
 // A recursive program, using ,
 // memoization, to implement the
@@ -56,7 +56,7 @@ int un_kp(int price[], int length[],
 test above functions */
 int main()
 {
-	int price[] = { 1, 5, 8, 9, 10, 17, 17, 20 };
+	int price[] = { 1, 5, 8, 9, 10, 17, 17, 20, 24, 30 };
 	int n = sizeof(price) / sizeof(price[0]);
 	int length[n];
 	for (int i = 0; i < n; i++) {
@@ -65,8 +65,8 @@ int main()
 	int Max_len = n;
 
 	// Function Call
-	cout << "Optimal solution is: (22) "
+	cout << "Optimal solution is: "
 		<< un_kp(price, length, n, Max_len) << endl;
 		
-	cout << "Maximum profit is: (22)" << endl;
+	cout << "Maximum profit is: " << endl;
 }
