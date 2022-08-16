@@ -6,8 +6,7 @@
 using namespace std;
 
 class Graph {   
-    //I'm using the adjacency list method for the graph structure
-    
+    //I'm using the adjacency list method for the graph structur 
     int Vertices;
     list<int>* adj;
 public:
